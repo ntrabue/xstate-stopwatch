@@ -1,7 +1,49 @@
 import React from "react";
 import { Machine, assign } from "xstate";
 import { useMachine } from "@xstate/react";
-import { Typography } from "@material-ui/core";
+import {
+  Typography,
+  Button as MaterialButton,
+  Table,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell
+} from "@material-ui/core";
+import styled from "@emotion/styled";
+
+const StopwatchWrapper = styled.div`
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  flex-direction: column;
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const Button = styled(MaterialButton)`
+  && {
+    margin: 10px 5px;
+  }
+`;
+
+const LapTable = styled(Table)`
+  && {
+    max-width: 50%;
+    text-align: center;
+  }
+  && th {
+    font-weight: bold;
+  }
+  && th,
+  td {
+    text-align: center;
+  }
+`;
 
 interface ITimerSchema {
   states: {
@@ -19,7 +61,6 @@ interface ITimerContext {
   currentLap: number;
   laps: [] | ILap[];
 }
-
 const timerMachine = Machine<ITimerContext, ITimerSchema>({
   id: "timer",
   initial: "paused",
@@ -85,56 +126,65 @@ const timerMachine = Machine<ITimerContext, ITimerSchema>({
   }
 });
 
-function getShowTime(time: number) {
-  // var days = Math.floor(difference / (1000 * 60 * 60 * 24));
-  let hours: string | number = Math.floor(
-    (time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-  let minutes: string | number = Math.floor(
-    (time % (1000 * 60 * 60)) / (1000 * 60)
-  );
-  let seconds: string | number = Math.floor((time % (1000 * 60)) / 1000);
-  let milliseconds: string | number = Math.floor((time % (1000 * 60)) / 100);
-  hours = hours < 10 ? "0" + hours : hours;
-  minutes = minutes < 10 ? "0" + minutes : minutes;
-  seconds = seconds < 10 ? "0" + seconds : seconds;
-  milliseconds =
-    milliseconds < 100
-      ? milliseconds < 10
-        ? "00" + milliseconds
-        : "0" + milliseconds
-      : milliseconds;
-  return hours + ":" + minutes + ":" + seconds + ":" + milliseconds;
-}
-
 const StopWatch: React.FC = () => {
   const [current, send] = useMachine(timerMachine);
 
   return (
-    <>
-      <Typography variant='h1' component='h1'>
+    <StopwatchWrapper>
+      <Typography variant="h1" component="h1">
         {current.context.timeElapsed.toFixed(2)}
       </Typography>
-      <button onClick={() => send("RESET")}>Reset</button>
-      {current.matches("running") && (
-        <button onClick={() => send("PAUSE")}>Pause</button>
-      )}
-      {current.matches("paused") && (
-        <button onClick={() => send("START")}>Play</button>
-      )}
-      <button
-        onClick={() => send("LAP")}
-        disabled={!current.matches("running")}
-      >
-        Lap
-      </button>
-
-      {(current.context.laps as Array<ILap>).map((lap: ILap) => (
-        <p key={lap.lap}>
-          Lap: {lap.lap}, Time: {lap.time}
-        </p>
-      ))}
-    </>
+      <ButtonRow>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => send("RESET")}
+        >
+          Reset
+        </Button>
+        {current.matches("running") && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => send("PAUSE")}
+          >
+            Pause
+          </Button>
+        )}
+        {current.matches("paused") && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => send("START")}
+          >
+            Play
+          </Button>
+        )}
+        <Button
+          onClick={() => send("LAP")}
+          disabled={!current.matches("running")}
+          variant="contained"
+        >
+          Lap
+        </Button>
+      </ButtonRow>
+      <LapTable>
+        <TableHead>
+          <TableRow>
+            <TableCell>Lap:</TableCell>
+            <TableCell>Time:</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {(current.context.laps as Array<ILap>).map((lap: ILap) => (
+            <TableRow key={lap.lap}>
+              <TableCell>{lap.lap}</TableCell>
+              <TableCell>{lap.time.toFixed(2)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </LapTable>
+    </StopwatchWrapper>
   );
 };
 
